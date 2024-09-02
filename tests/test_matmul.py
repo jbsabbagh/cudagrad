@@ -1,11 +1,9 @@
 import numpy as np
+from cudagrad.kernels.matmul import matmul_2d_numba
+from numba import cuda
 
 
-def test_matmul_2d_numba(init_cuda_simulator):
-    # this needs to be imported after the simulator is initialized
-    from cudagrad.kernels.matmul import matmul_2d_numba
-    from numba import cuda
-
+def test_matmul_2d_numba():
     matrix_a = cuda.to_device(np.random.randn(32, 32).astype(np.float32))
     matrix_b = cuda.to_device(np.random.randn(32, 32).astype(np.float32))
 

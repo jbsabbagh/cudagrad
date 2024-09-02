@@ -3,6 +3,7 @@ from numba import cuda
 from cudagrad.kernels.utils import cdiv
 from cudagrad.kernels.constants import WARP_SIZE
 
+
 @cuda.jit
 def _matmul_numba_kernel(matrix_a, matrix_b, output_matrix):
     block_idx, block_dim, thread_idx = cuda.blockIdx, cuda.blockDim, cuda.threadIdx
