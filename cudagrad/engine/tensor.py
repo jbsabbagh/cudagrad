@@ -1,4 +1,6 @@
 import numpy as np
+from cudagrad.kernels.add import add_scalar_to_2d_matrix_numba, add_2d_numba
+
 
 class Tensor:
     def __init__(self, data: np.array, _children=(), _op="", label=""):
@@ -11,12 +13,18 @@ class Tensor:
         self._op = _op  # the op that produced this node, for graphviz / debugging / etc
 
     def __add__(self, other):
-        other = other if isinstance(other, Tensor) else Tensor(other)
-        out = Tensor(self.data + other.data, (self, other), "+")
+        if not isinstance(other, Tensor):
+            added_data = add_scalar_to_2d_matrix_numba(self.data, other)
+            other = Tensor(other)
+
+        else:
+            added_data = add_2d_numba(self.data, other.data)
+
+        out = Tensor(added_data, (self, other), "+")
 
         def _backward():
-            self.grad += out.grad
-            other.grad += out.grad
+            self.grad = add_2d_numba(self.grad, out.grad)
+            other.grad = add_2d_numba(other.grad, out.grad)
 
         out._backward = _backward
 
@@ -72,7 +80,7 @@ class Tensor:
         build_topo(self)
 
         # go one variable at a time and apply the chain rule to get its gradient
-        self.grad = 1
+        self.grad = np.ones_like(self.data)
         for v in reversed(topo):
             v._backward()
 
@@ -98,4 +106,4 @@ class Tensor:
         return other * self**-1
 
     def __repr__(self):
-        return f"Value(data={self.data}, grad={self.grad})"
+        return f"Tensor(data={self.data}, Tensor={self.grad})"
