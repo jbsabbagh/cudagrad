@@ -2,8 +2,10 @@ import numpy as np
 from numba import cuda
 from cudagrad.kernels.utils import cdiv
 
+WARP_SIZE = 32
+
 @cuda.jit
-def matmul_k_numba(matrix_a, matrix_b, output_matrix, tile_width):
+def _matmul_numba_kernel(matrix_a, matrix_b, output_matrix):
     block_idx, block_dim, thread_idx = cuda.blockIdx, cuda.blockDim, cuda.threadIdx
     thread_col, thread_row = thread_idx.x, thread_idx.y
 
@@ -21,17 +23,17 @@ def matmul_k_numba(matrix_a, matrix_b, output_matrix, tile_width):
         output_matrix[row, col] = partial_sum
 
 
-def matmul_2d_numba(matrix_a, matrix_b, tile_width=16):
+def matmul_2d_numba(matrix_a, matrix_b):
     height_a, width_a = matrix_a.shape
     height_b, width_b = matrix_b.shape
     assert width_a == height_b, "Size mismatch!"
     output_matrix = cuda.device_array((height_a, width_b), dtype=matrix_a.dtype)
-    threads_per_block = (tile_width, tile_width)
+    threads_per_block = (WARP_SIZE, WARP_SIZE)
     blocks_per_grid = (
         cdiv(width_b, threads_per_block[0]),
         cdiv(height_a, threads_per_block[1]),
     )
-    matmul_k_numba[blocks_per_grid, threads_per_block](
-        matrix_a, matrix_b, output_matrix, tile_width
+    _matmul_numba_kernel[blocks_per_grid, threads_per_block](
+        matrix_a, matrix_b, output_matrix
     )
     return output_matrix
