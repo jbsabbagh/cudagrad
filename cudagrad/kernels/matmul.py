@@ -1,12 +1,6 @@
 import numpy as np
 from numba import cuda
-import math
-
-
-def cdiv(a, b):
-    "Int ceiling division of `a` over `b`"
-    return (a + b - 1) // b
-
+from cudagrad.kernels.utils import cdiv
 
 @cuda.jit
 def matmul_k_numba(matrix_a, matrix_b, output_matrix, tile_width):
