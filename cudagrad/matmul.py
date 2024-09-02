@@ -1,7 +1,6 @@
-import torch
 import numpy as np
 from numba import cuda
-from numba.cuda import as_cuda_array as ca
+from numba.cuda import as_cuda_array
 import math
 
 
@@ -56,9 +55,7 @@ def matmul_2d_numba(matrix_a, matrix_b, tile_width=16):
     height_a, width_a = matrix_a.shape
     width_b, height_b = matrix_b.shape
     assert width_a == width_b, "Size mismatch!"
-    output_matrix = torch.zeros(
-        height_a, height_b, dtype=matrix_a.dtype, device=matrix_a.device
-    )
+    output_matrix = np.zeros((height_a, height_b), dtype=matrix_a.dtype)
     dynamic_shared_memory_size = 2 * tile_width * tile_width * 4
     threads_per_block = tile_width, tile_width
     blocks_per_grid = (
@@ -66,6 +63,32 @@ def matmul_2d_numba(matrix_a, matrix_b, tile_width=16):
         cdiv(height_a, threads_per_block[1]),
     )
     matmul_k_numba[blocks_per_grid, threads_per_block, 0, dynamic_shared_memory_size](
-        ca(matrix_a), ca(matrix_b), ca(output_matrix), tile_width
+        matrix_a, matrix_b, output_matrix, tile_width
     )
     return output_matrix
+
+
+def test_matmul_2d_numba():
+    import numpy as np
+
+    # Initialize input matrices
+    matrix_a = np.random.randn(32, 32).astype(np.float32)
+    matrix_b = np.random.randn(32, 32).astype(np.float32)
+
+    # Perform matrix multiplication using the matmul_2d_numba function
+    output_matrix = matmul_2d_numba(matrix_a, matrix_b)
+
+    # Perform matrix multiplication using NumPy for verification
+    expected_output = np.matmul(matrix_a, matrix_b)
+
+    # Check if the output from matmul_2d_numba is close to the expected output
+    assert np.allclose(output_matrix, expected_output, atol=1e-5), "Test failed!"
+
+    print("Test passed!")
+
+
+if __name__ == "__main__":
+    import os
+
+    os.environ["NUMBA_ENABLE_CUDASIM"] = "1"
+    test_matmul_2d_numba()
