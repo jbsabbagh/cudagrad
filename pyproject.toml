@@ -32,10 +32,6 @@ dev = [
     "pytest",
 ]
 
-[tool.ruff]
-select = ["E", "F", "I"]
-line-length = 100
-
 [tool.pytest.ini_options]
 addopts = "-v"
 testpaths = ["tests"]
