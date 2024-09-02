@@ -1,8 +1,7 @@
 import numpy as np
 from numba import cuda
 from cudagrad.kernels.utils import cdiv
-
-WARP_SIZE = 32
+from cudagrad.kernels.constants import WARP_SIZE
 
 @cuda.jit
 def _matmul_numba_kernel(matrix_a, matrix_b, output_matrix):
