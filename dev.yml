@@ -1,0 +1,10 @@
+name: cudagrad
+
+type: python
+
+up:
+  - python: 3.10.13
+  - pip
+  - uv_pip:
+      requirements:
+      - requirements.txt
