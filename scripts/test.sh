@@ -1,0 +1,1 @@
+NUMBA_ENABLE_CUDASIM=1 pytest

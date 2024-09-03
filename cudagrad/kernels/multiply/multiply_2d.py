@@ -11,6 +11,7 @@ def _mul_2d_numba_kernel(a, b, output):
     if row < a.shape[0] and col < a.shape[1]:
         output[row, col] = a[row, col] * b[row, col]
 
+
 def mul_2d_numba(a, b):
     output = cuda.device_array_like(a)
     threads_per_block = (WARP_SIZE, WARP_SIZE)

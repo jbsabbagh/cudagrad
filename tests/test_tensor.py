@@ -53,7 +53,7 @@ def test_tensor_backward():
     b = Tensor(rand_b)
     c = a + b + 1
     f = 16 * c * 2
-    d = f ** 2
+    d = f**2
     e = d.relu()
     e.backward()
 

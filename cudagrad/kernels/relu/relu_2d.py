@@ -11,6 +11,7 @@ def _relu_2d_numba_kernel(a):
     if row < a.shape[0] and col < a.shape[1]:
         a[row, col] = max(0, a[row, col])
 
+
 def relu_2d_numba(a):
     output = cuda.device_array_like(a)
     threads_per_block = (WARP_SIZE, WARP_SIZE)

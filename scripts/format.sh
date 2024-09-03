@@ -1,0 +1,1 @@
+ruff format cudagrad tests
