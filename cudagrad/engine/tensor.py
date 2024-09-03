@@ -1,5 +1,10 @@
 import numpy as np
-from cudagrad.kernels.add import add_scalar_to_2d_matrix_numba, add_2d_numba
+from cudagrad.kernels.add import add_2d_numba
+from cudagrad.kernels.power import power_2d_numba
+from cudagrad.kernels.gradients import power_gradient_numba
+from cudagrad.kernels.multiply import mul_2d_numba
+from cudagrad.kernels.relu import relu_2d_numba
+from cudagrad.kernels.gradients import relu_gradient_numba
 
 
 class Tensor:
@@ -14,13 +19,8 @@ class Tensor:
 
     def __add__(self, other):
         if not isinstance(other, Tensor):
-            added_data = add_scalar_to_2d_matrix_numba(self.data, other)
-            other = Tensor(other)
-
-        else:
-            added_data = add_2d_numba(self.data, other.data)
-
-        out = Tensor(added_data, (self, other), "+")
+            other = Tensor(np.full_like(self.data, other))
+        out = Tensor(add_2d_numba(self.data, other.data), (self, other), "+")
 
         def _backward():
             self.grad = add_2d_numba(self.grad, out.grad)
@@ -31,12 +31,13 @@ class Tensor:
         return out
 
     def __mul__(self, other):
-        other = other if isinstance(other, Tensor) else Tensor(other)
-        out = Tensor(self.data * other.data, (self, other), "*")
+        if not isinstance(other, Tensor):
+            other = Tensor(np.full_like(self.data, other))
+        out = Tensor(mul_2d_numba(self.data, other.data), (self, other), "*")
 
         def _backward():
-            self.grad += other.data * out.grad
-            other.grad += self.data * out.grad
+            self.grad = add_2d_numba(self.grad, mul_2d_numba(other.data, out.grad))
+            other.grad = add_2d_numba(other.grad, mul_2d_numba(self.data, out.grad))
 
         out._backward = _backward
 
@@ -46,20 +47,22 @@ class Tensor:
         assert isinstance(
             other, (int, float)
         ), "only supporting int/float powers for now"
-        out = Tensor(self.data**other, (self,), f"**{other}")
+        out = Tensor(power_2d_numba(self.data, other), (self,), f"**{other}")
 
         def _backward():
-            self.grad += (other * self.data ** (other - 1)) * out.grad
+            new_grad = power_gradient_numba(self.data, other)
+            self.grad = add_2d_numba(self.grad, new_grad)
 
         out._backward = _backward
 
         return out
 
     def relu(self):
-        out = Tensor(0 if self.data < 0 else self.data, (self,), "ReLU")
+        out = Tensor(relu_2d_numba(self.data), (self,), "ReLU")
 
         def _backward():
-            self.grad += (out.data > 0) * out.grad
+            new_grad = relu_gradient_numba(self.data, out.grad)
+            self.grad = add_2d_numba(self.grad, new_grad)
 
         out._backward = _backward
 
